@@ -1,0 +1,584 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 23 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1024,
+        224
+      ],
+      "id": "87fa523f-484b-4f96-8c22-8c7ff6d122d6",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=drone+OR+UAV+technology+OR+DGCA+India+when:1d&hl=en-IN&gl=IN&ceid=IN:en",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -800,
+        224
+      ],
+      "id": "4dc12c6c-4ac2-4c61-b109-921d0e399bf2",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get parsed RSS feed\nconst channel = $input.first().json.rss.channel;\nconst items = Array.isArray(channel.item) ? channel.item : [channel.item];\n\nconst articles = items.slice(0, 5).map(a => {\n  let image = null;\n  if (a[\"media:content\"]) {\n    image = Array.isArray(a[\"media:content\"]) ? a[\"media:content\"][0][\"$\"]?.url : a[\"media:content\"][\"$\"]?.url;\n  }\n  if (!image && a[\"media:thumbnail\"]) {\n    image = a[\"media:thumbnail\"][\"$\"]?.url;\n  }\n  if (!image && a.enclosure && a.enclosure[\"$\"]?.url) {\n    image = a.enclosure[\"$\"].url;\n  }\n  return {\n    title: a.title,\n    link: a.link,\n    pubDate: a.pubDate,\n    image: image || \"https://via.placeholder.com/600x400?text=Drone+News\"\n  };\n});\n\nreturn articles.map(article => ({ json: article }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        224
+      ],
+      "id": "05968120-9e17-4cf7-8a50-fa5f9adc3373",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a professional news summarizer. Take the following article metadata and write a clear, engaging 1-paragraph summary as well as relavent 3 hashtags that could be posted on LinkedIn. Keep it under 800 characters.\n\nTitle: {{ $json[\"title\"] }}\nPublication Date: {{ $json[\"pubDate\"] }}\nLink: {{ $json[\"link\"] }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        224
+      ],
+      "id": "ac16cbd7-91ec-48de-90b5-5216cc716d0f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1rR6VvvohGmYv3svLNA-mDqJ1i_yBLL98V6GI83cui20",
+          "mode": "list",
+          "cachedResultName": "news agent"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $('Code').item.json.title }}",
+            "link": "={{ $('Code').item.json.link }}",
+            "summary": "={{ $('AI Agent').item.json.output }}",
+            "pubDate": "={{ $('Code').item.json.pubDate }}",
+            "Image": "={{ $json.image }}",
+            "Done": "={{ false }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pubDate",
+              "displayName": "pubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Image",
+              "displayName": "Image",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Done",
+              "displayName": "Done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -944,
+        624
+      ],
+      "id": "8b7b1d37-2694-4604-8167-f681365e5f07",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GJ4oXzMciTzAMjUk",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1rR6VvvohGmYv3svLNA-mDqJ1i_yBLL98V6GI83cui20",
+          "mode": "list",
+          "cachedResultName": "news agent"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Done",
+              "lookupValue": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -704,
+        624
+      ],
+      "id": "5c99bd51-b362-4d77-9055-cc64dd54593b",
+      "name": "Get row(s) in sheet",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GJ4oXzMciTzAMjUk",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.Image }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        624
+      ],
+      "id": "93049276-681c-4f08-b87b-5e31821faa5f",
+      "name": "Download Image (Binary)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1rR6VvvohGmYv3svLNA-mDqJ1i_yBLL98V6GI83cui20",
+          "mode": "list",
+          "cachedResultName": "news agent"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Done": "=\"true\"",
+            "row_number": "={{ $('Download Image (Binary)').item.json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pubDate",
+              "displayName": "pubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Image",
+              "displayName": "Image",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Done",
+              "displayName": "Done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        48,
+        624
+      ],
+      "id": "0532a719-9ca1-4614-8a79-ee023bc0bb0b",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "GJ4oXzMciTzAMjUk",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        32,
+        320
+      ],
+      "id": "bfdfbc54-3a18-4b99-bc87-85fea2a1733a",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "W9HtA0xxQZs7yKAX",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "query": "={{ $('Code').item.json.title }} provide an image based on this ",
+        "options": {
+          "max_results": 2,
+          "include_images": true
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavily",
+      "typeVersion": 1,
+      "position": [
+        608,
+        224
+      ],
+      "id": "bad8ba98-f6bc-4e8e-854f-2c61e4b0c6f2",
+      "name": "Search",
+      "alwaysOutputData": false,
+      "credentials": {
+        "tavilyApi": {
+          "id": "XKJkqcDnmgxhStcP",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  // Get all images from Tavily\n  const imgs = item.json.images || []\n\n  // Filter only JPG/JPEG\n  const jpgs = imgs.filter(url => url.match(/\\.(jpg|jpeg)$/i))\n\n  // Pick the first JPG/JPEG, or empty string if none found\n  const firstImage = jpgs.length > 0 ? jpgs[0] : \"\"\n\n  return {\n    json: {\n      title: item.json.query,\n      image: firstImage\n    }\n  }\n})\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        224
+      ],
+      "id": "67b8c2c4-8b7e-4123-89be-cd66d8d3e4d0",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "content": "# Linkedin Automation Agent",
+        "height": 80,
+        "width": 496
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -64
+      ],
+      "typeVersion": 1,
+      "id": "c279a867-99e9-47d5-ac31-ebdf6d468d3b",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        224
+      ],
+      "id": "1f6d0572-5b46-4c4d-a929-987acad98e41",
+      "name": "XML"
+    },
+    {
+      "parameters": {
+        "person": "_OlDmuzguG",
+        "text": "={{ $json.title }}\n{{ $json.summary }}\n{{ $json.Image }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        624
+      ],
+      "id": "90f81b4b-cb01-45d9-9f9f-177e9d6ab862",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "y4KR8MfuOT6snRIM",
+          "name": "LinkedIn account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Download Image (Binary)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image (Binary)": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "85acacd8322b31e0495a5845c354c9f079c3a67fafc5652bb920bf383e2b24ef"
+  }
+}
