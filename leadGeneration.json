@@ -1,0 +1,607 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Search Query",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Query",
+              "placeholder": "Hotels",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Place",
+              "placeholder": "Bengaluru",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -1168,
+        -336
+      ],
+      "id": "65dad610-a79e-494f-a8e4-bf55cc677e4c",
+      "name": "On form submission",
+      "webhookId": "d70c67bb-4f9d-447c-81c7-98b3c1a39527"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.google.com/maps/search/{{ $json.Place }}+{{ $json.Query }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -992,
+        -336
+      ],
+      "id": "1df9c874-d2f3-4682-a03f-cb5ac23cfa53",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json.data\nconst regex = /https?:\\/\\/[^\\/\\s\"'>]+/g\nconst websites = input.match(regex)\nreturn websites.map(website => ({json:{website}}))"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        -336
+      ],
+      "id": "e92e4652-f44b-47c2-82ec-59efd774e4a0",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "bf0a5053-9660-457c-9581-964793bb6d7d",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              },
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "schema"
+            },
+            {
+              "id": "9110b9e0-12aa-45cc-bde0-9eda8c10970e",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              },
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "google"
+            },
+            {
+              "id": "fb9b6ed6-96a5-4560-ab10-b8a4b9a61a2b",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              },
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "gg"
+            },
+            {
+              "id": "10500c0b-cdbd-4816-aba3-df60d69845dc",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              },
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "gstatic"
+            },
+            {
+              "id": "c179ddff-4f04-4dbf-b7f8-ef57703b48c9",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "ly",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "92693faa-acff-4ab7-a722-92ea7348b8e2",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "gle",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "8f681a31-a292-4bed-9b93-7886e6717a5d",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "revering",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "af3b682a-fd22-43d8-ab51-0d58b832ed73",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "me",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "6851150f-ec99-4abd-a6e3-8ce7ffa3a44e",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "reserving",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1db95e8c-2d17-49cc-a88d-3354ce3d4a9c",
+      "name": "Filter Google URLs",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        -624,
+        -336
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        -336
+      ],
+      "id": "603acae2-2309-4bea-be02-b83b435b8e3b",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -208,
+        -336
+      ],
+      "id": "abf55d6f-47b0-43b7-8144-55d32d598c2e",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json.data || \"\";\n\n// Email regex (with obfuscation support)\nconst emailRegex = /[a-zA-Z0-9._%+-]+\\s*(?:@|[(\\[]at[)\\]])\\s*[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g;\nconst rawEmails = input.match(emailRegex) || [];\nconst emails = rawEmails.map(e => e.replace(/\\s|\\[(at)\\]|\\(at\\)/gi, \"@\"));\n\n// Phone regex\nconst phoneRegex = /(?:\\+?\\d{1,3}[-.\\s]?)?(?:\\(?\\d{2,5}\\)?[-.\\s]?)?\\d{6,10}/g;\nconst rawPhones = input.match(phoneRegex) || [];\n\n// Clean phone numbers (remove junk like CSS values)\nconst phones = rawPhones\n  .map(p => p.replace(/[^\\d+]/g, \"\")) // keep only digits and +\n  .filter(p => p.length >= 7 && p.length <= 15); // filter valid lengths\n\nreturn {\n  json: {\n    emails: [...new Set(emails)],\n    phones: [...new Set(phones)]\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -336
+      ],
+      "id": "983b74ca-17b7-46ac-9f04-c274e9650b86",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        -336
+      ],
+      "id": "ed37c911-0f94-462b-9fab-a6b7c69b491b",
+      "name": "Wait",
+      "webhookId": "70e60ff9-1a24-4fa5-a3a8-c4dac0ba2e81"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1LQqtbD93qjPe9hu8ldIvB_oaX91qCwrgR5w5pwQ21AI",
+          "mode": "list",
+          "cachedResultName": "Lead Generator",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1LQqtbD93qjPe9hu8ldIvB_oaX91qCwrgR5w5pwQ21AI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1LQqtbD93qjPe9hu8ldIvB_oaX91qCwrgR5w5pwQ21AI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "gmail": "={{ $json.email }}",
+            "phone": "={{ $json.phones }}"
+          },
+          "matchingColumns": [
+            "gmail"
+          ],
+          "schema": [
+            {
+              "id": "gmail",
+              "displayName": "gmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        288,
+        -912
+      ],
+      "id": "ded326d2-0e0f-4dd5-b7d4-e3d86d54916c",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jaoDfcgdS2HAjRHW",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all input items\nconst results = [];\nconst seen = new Set(); // To track unique emails\n\nfor (const item of $input.all()) {\n  const emails = item.json.emails || [];\n  const phones = item.json.phones || [];\n\n  if (emails.length > 0) {\n    const email = emails[0].toLowerCase().trim(); // normalize email\n\n    if (!seen.has(email)) {\n      seen.add(email);\n\n      // Filter valid phones: only 10 to 12 digits\n      const validPhones = phones\n        .map(p => p.toString().replace(/\\D/g, \"\")) // keep only digits\n        .filter(p => p.length >= 10 && p.length <= 12);\n\n      results.push({\n        json: {\n          email: email,\n          phones: validPhones.slice(0, 2) // take first 2 valid phone numbers\n        }\n      });\n    }\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        -720
+      ],
+      "id": "8383801a-10a9-46f5-81a6-f5ff3ed7f715",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.website }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\",\n  \"Accept-Language\": \"en-US,en;q=0.9\",\n  \"Connection\": \"keep-alive\"\n}\n",
+        "options": {
+          "timeout": 3000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        96,
+        -320
+      ],
+      "id": "4482f47d-2715-42d4-b9c9-a09f09bb84d2",
+      "name": "HTTP Request1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "=http://apilayer.net/api/check?access_key=6aed470bda73213a4c239a08961e860a\n&email={{ $json.email }}\n",
+        "options": {
+          "timeout": 1000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        -736
+      ],
+      "id": "466a5dbe-25df-435a-b5b1-77c52386a32c",
+      "name": "HTTP Request2",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "82b61595-c272-4157-87c9-6b31be9d1314",
+              "leftValue": "={{ $json.format_valid }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        -832
+      ],
+      "id": "06b2945d-a597-4023-a27a-ddc5feaa2b8a",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -736,
+        -720
+      ],
+      "id": "e7e9449c-b16d-48c0-a2ce-d82dfc3fa6cf",
+      "name": "Wait1",
+      "webhookId": "2015a3a9-ce36-4c91-ab74-19fd4ecd8a57"
+    },
+    {
+      "parameters": {
+        "maxItems": 2,
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        -720
+      ],
+      "id": "f3daf556-830c-4fc6-be9f-cb527c6e9d3b",
+      "name": "Limit"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -736
+      ],
+      "id": "857040fa-887f-4b36-8de0-a2aaadf92644",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -560
+      ],
+      "id": "8a65c963-7332-4f43-9631-16b8a32bcc35",
+      "name": "No Operation, do nothing1"
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Filter Google URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Google URLs": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "85acacd8322b31e0495a5845c354c9f079c3a67fafc5652bb920bf383e2b24ef"
+  }
+}
